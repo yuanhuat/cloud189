@@ -126,13 +126,22 @@ async function loadFiles(path) {
         const result = await response.json();
         
         if (result.code === 0) {
-            currentFiles = result.data.files;
-            renderFiles(currentFiles);
-            updateBreadcrumb(path);
+            // 添加null检查和默认值
+            if (result.data && result.data.files) {
+                currentFiles = result.data.files;
+                renderFiles(currentFiles);
+                updateBreadcrumb(path);
+            } else {
+                // 如果data或files为null，显示空状态
+                currentFiles = [];
+                renderFiles(currentFiles);
+                updateBreadcrumb(path);
+            }
         } else {
-            showNotification('error', result.message);
+            showNotification('error', result.message || '获取文件列表失败');
         }
     } catch (error) {
+        console.error('Load files error:', error);
         showNotification('error', '加载文件列表失败: ' + error.message);
     } finally {
         hideLoading();
@@ -143,7 +152,8 @@ async function loadFiles(path) {
 function renderFiles(files) {
     const fileList = document.getElementById('fileList');
     
-    if (files.length === 0) {
+    // 添加null和undefined检查
+    if (!files || !Array.isArray(files) || files.length === 0) {
         fileList.innerHTML = '<div class="empty-state">此文件夹为空</div>';
         return;
     }
@@ -262,7 +272,9 @@ function selectFile(id) {
 function openFile(id) {
     const file = currentFiles.find(f => f.id === id);
     if (file && file.isDir) {
-        navigateToPath(file.path);
+        // 构建新路径
+        const newPath = currentPath === '/' ? '/' + file.name : currentPath + '/' + file.name;
+        navigateToPath(newPath);
     } else if (file) {
         downloadFile(id);
     }

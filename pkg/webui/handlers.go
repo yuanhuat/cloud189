@@ -14,6 +14,11 @@ import (
 func (s *Server) handleListFiles(c *gin.Context) {
 	path := c.DefaultQuery("path", "/")
 	
+	// 处理undefined或空路径的情况
+	if path == "undefined" || path == "" {
+		path = "/"
+	}
+	
 	entries, err := s.app.ReadDir(path)
 	if err != nil {
 		errorResponse(c, 1, fmt.Sprintf("获取文件列表失败: %v", err))
