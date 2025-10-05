@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-cloud"></i>
+                    天翼云盘 Web 管理
+                </h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        <i class="fas fa-upload"></i>
+                        上传文件
+                    </button>
+                    <button class="btn btn-secondary" onclick="createFolder()">
+                        <i class="fas fa-folder-plus"></i>
+                        新建文件夹
+                    </button>
+                    <button class="btn btn-info" onclick="refreshFiles()">
+                        <i class="fas fa-sync-alt"></i>
+                        刷新
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main">
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>快速访问</h3>
+                    <ul class="nav-list">
+                        <li><a href="#" onclick="navigateToPath('/')" class="nav-item active">
+                            <i class="fas fa-home"></i> 根目录
+                        </a></li>
+                        <li><a href="#" onclick="showSearch()" class="nav-item">
+                            <i class="fas fa-search"></i> 搜索文件
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>存储空间</h3>
+                    <div class="space-info">
+                        <div class="space-bar">
+                            <div class="space-used" id="spaceUsed"></div>
+                        </div>
+                        <div class="space-text" id="spaceText">加载中...</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 文件列表区域 -->
+            <section class="content">
+                <!-- 面包屑导航 -->
+                <nav class="breadcrumb" id="breadcrumb">
+                    <span class="breadcrumb-item" onclick="navigateToPath('/')">
+                        <i class="fas fa-home"></i> 根目录
+                    </span>
+                </nav>
+
+                <!-- 文件列表 -->
+                <div class="file-list-container">
+                    <div class="file-list-header">
+                        <div class="file-list-controls">
+                            <div class="view-controls">
+                                <button class="view-btn active" data-view="list">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                <button class="view-btn" data-view="grid">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                            </div>
+                            <div class="sort-controls">
+                                <select id="sortBy" onchange="sortFiles()">
+                                    <option value="name">按名称排序</option>
+                                    <option value="size">按大小排序</option>
+                                    <option value="modTime">按修改时间排序</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="file-list" id="fileList">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            加载中...
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 上传模态框 -->
+        <div class="modal" id="uploadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>上传文件</h3>
+                    <button class="modal-close" onclick="hideUploadModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖拽文件到此处或点击选择文件</p>
+                        <input type="file" id="fileInput" multiple style="display: none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            选择文件
+                        </button>
+                    </div>
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索模态框 -->
+        <div class="modal" id="searchModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>搜索文件</h3>
+                    <button class="modal-close" onclick="hideSearchModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-form">
+                        <input type="text" id="searchInput" placeholder="输入搜索关键词..." class="form-input">
+                        <button class="btn btn-primary" onclick="performSearch()">
+                            <i class="fas fa-search"></i>
+                            搜索
+                        </button>
+                    </div>
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右键菜单 -->
+        <div class="context-menu" id="contextMenu">
+            <ul>
+                <li onclick="downloadFile()"><i class="fas fa-download"></i> 下载</li>
+                <li onclick="renameFile()"><i class="fas fa-edit"></i> 重命名</li>
+                <li onclick="moveFile()"><i class="fas fa-cut"></i> 移动</li>
+                <li onclick="deleteFile()"><i class="fas fa-trash"></i> 删除</li>
+            </ul>
+        </div>
+
+        <!-- 通知容器 -->
+        <div class="notifications" id="notifications"></div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
