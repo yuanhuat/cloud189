@@ -442,7 +442,7 @@ async function renameFile(id) {
     if (!newName || newName === file.name) return;
     
     try {
-        const response = await fetch(`/api/files/${id}/rename`, {
+        const response = await fetch(`/api/files/${id}/rename?path=${encodeURIComponent(currentPath)}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

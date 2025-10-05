@@ -20,6 +20,9 @@ type Drive interface {
 	Download(local string, cloud ...string) error
 	Share(prifix, cloud string) (func(http.ResponseWriter, *http.Request), error)
 	GetDownloadUrl(cloud string) (string, error)
+	// 新增方法
+	Rename(oldPath, newName string) error
+	Search(path, keyword string) ([]File, error)
 }
 
 type FileType uint16

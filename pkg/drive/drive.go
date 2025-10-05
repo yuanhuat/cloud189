@@ -85,3 +85,26 @@ func (f *FS) Delete(name ...string) error {
 	invalid(files...)
 	return err
 }
+
+func (f *FS) Rename(oldPath, newName string) error {
+	file, err := f.stat(oldPath)
+	if err != nil {
+		return err
+	}
+	err = f.api.Rename(file, newName)
+	if err != nil {
+		return err
+	}
+	// 使缓存失效
+	load(file.PId()).invalid()
+	invalid(file)
+	return nil
+}
+
+func (f *FS) Search(path, keyword string) ([]pkg.File, error) {
+	parent, err := f.stat(path)
+	if err != nil {
+		return nil, err
+	}
+	return f.api.Search(parent, pkg.ALL, keyword)
+}

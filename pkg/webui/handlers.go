@@ -181,9 +181,41 @@ func (s *Server) handleDelete(c *gin.Context) {
 
 // handleRename 重命名文件
 func (s *Server) handleRename(c *gin.Context) {
-	// 暂时返回未实现错误，因为Drive接口目前没有Rename方法
-	errorResponse(c, http.StatusNotImplemented, "重命名功能暂未实现")
-	return
+	fileId := c.Param("id")
+	if fileId == "" {
+		errorResponse(c, 1, "文件ID不能为空")
+		return
+	}
+	
+	var req struct {
+		NewName string `json:"newName" binding:"required"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errorResponse(c, 1, fmt.Sprintf("参数错误: %v", err))
+		return
+	}
+	
+	// 构建文件路径 - 使用当前路径和文件ID
+	// 这里假设fileId就是文件名，如果需要完整路径，可能需要额外的逻辑
+	var filePath string
+	if currentPath := c.Query("path"); currentPath != "" {
+		filePath = currentPath + "/" + fileId
+	} else {
+		filePath = "/" + fileId
+	}
+	
+	// 执行重命名
+	err := s.app.Rename(filePath, req.NewName)
+	if err != nil {
+		errorResponse(c, 1, fmt.Sprintf("重命名失败: %v", err))
+		return
+	}
+	
+	success(c, gin.H{
+		"id":      fileId,
+		"newName": req.NewName,
+	})
 }
 
 // handleMove 处理移动文件请求
@@ -213,16 +245,42 @@ func (s *Server) handleMove(c *gin.Context) {
 
 // handleSearch 处理搜索请求
 func (s *Server) handleSearch(c *gin.Context) {
+	path := c.Query("path")
 	keyword := c.Query("keyword")
 	
+	if path == "" {
+		path = "/"
+	}
 	if keyword == "" {
 		errorResponse(c, 1, "搜索关键词不能为空")
 		return
 	}
 	
-	// TODO: 实现搜索功能
-	// 目前Drive接口没有Search方法，需要后续实现
-	errorResponse(c, 1, "搜索功能暂未实现")
+	// 执行搜索
+	files, err := s.app.Search(path, keyword)
+	if err != nil {
+		errorResponse(c, 1, fmt.Sprintf("搜索失败: %v", err))
+		return
+	}
+	
+	// 转换为响应格式
+	var result []gin.H
+	for _, file := range files {
+		result = append(result, gin.H{
+			"id":      file.Id(),
+			"name":    file.Name(),
+			"size":    file.Size(),
+			"isDir":   file.IsDir(),
+			"modTime": file.ModTime().Format("2006-01-02 15:04:05"),
+		})
+	}
+	
+	success(c, gin.H{
+		"path":    path,
+		"keyword": keyword,
+		"results": result,
+		"count":   len(result),
+	})
 }
 
 // handleSpace 处理获取空间信息
