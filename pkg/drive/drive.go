@@ -26,6 +26,9 @@ func (f *FS) Login(username, password string) error {
 func (f *FS) QrLogin() error {
 	return f.api.QrLogin()
 }
+func (f *FS) Logout() error {
+	return f.api.Logout()
+}
 func (f *FS) Space() (pkg.Space, error) {
 	return f.api.Space()
 }

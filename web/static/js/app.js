@@ -20,6 +20,9 @@ function initializeApp() {
     // 设置右键菜单
     setupContextMenu();
     
+    // 设置模态框点击外部关闭
+    setupModalEvents();
+    
     // 设置视图切换
     setupViewToggle();
 }
@@ -681,4 +684,161 @@ async function logout() {
         console.error('登出错误:', error);
         showNotification('error', '登出失败');
     }
+}
+
+// 天翼云账号相关函数
+
+// 设置模态框事件
+function setupModalEvents() {
+    // 点击模态框外部关闭
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('show');
+        }
+    });
+    
+    // ESC键关闭模态框
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal.show');
+            modals.forEach(modal => modal.classList.remove('show'));
+        }
+    });
+}
+
+// 显示天翼云登录模态框
+function showCloudLoginModal() {
+    document.getElementById('cloudLoginModal').classList.add('show');
+    // 默认显示密码登录
+    switchLoginTab('password');
+}
+
+// 隐藏天翼云登录模态框
+function hideCloudLoginModal() {
+    document.getElementById('cloudLoginModal').classList.remove('show');
+    // 重置表单
+    document.getElementById('cloudUsername').value = '';
+    document.getElementById('cloudPassword').value = '';
+    hideCloudLoginStatus();
+}
+
+// 显示天翼云退出模态框
+function showCloudLogoutModal() {
+    document.getElementById('cloudLogoutModal').classList.add('show');
+}
+
+// 隐藏天翼云退出模态框
+function hideCloudLogoutModal() {
+    document.getElementById('cloudLogoutModal').classList.remove('show');
+}
+
+// 切换登录标签页
+function switchLoginTab(tab) {
+    // 移除所有活动状态
+    document.querySelectorAll('.login-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.login-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 激活选中的标签页
+    if (tab === 'password') {
+        document.querySelector('.login-tab[onclick*="password"]').classList.add('active');
+        document.getElementById('passwordLoginForm').classList.add('active');
+    } else if (tab === 'qr') {
+        document.querySelector('.login-tab[onclick*="qr"]').classList.add('active');
+        document.getElementById('qrLoginForm').classList.add('active');
+    }
+}
+
+// 执行天翼云密码登录
+async function performCloudLogin() {
+    const username = document.getElementById('cloudUsername').value.trim();
+    const password = document.getElementById('cloudPassword').value.trim();
+    
+    if (!username || !password) {
+        showNotification('error', '请输入用户名和密码');
+        return;
+    }
+    
+    showCloudLoginStatus('正在登录...', 'info');
+    
+    try {
+        const response = await fetch('/api/cloud/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.code === 0) {
+            showCloudLoginStatus('登录成功！', 'success');
+            showNotification('success', '天翼云账号登录成功');
+            setTimeout(() => {
+                hideCloudLoginModal();
+                // 刷新文件列表
+                refreshFiles();
+            }, 1500);
+        } else {
+            showCloudLoginStatus('登录失败: ' + result.message, 'error');
+            showNotification('error', '登录失败: ' + result.message);
+        }
+    } catch (error) {
+        console.error('登录错误:', error);
+        showCloudLoginStatus('登录失败: 网络错误', 'error');
+        showNotification('error', '登录失败: 网络错误');
+    }
+}
+
+// 执行天翼云退出
+async function performCloudLogout() {
+    try {
+        const response = await fetch('/api/cloud/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.code === 0) {
+            showNotification('success', '天翼云账号退出成功');
+            hideCloudLogoutModal();
+            // 刷新文件列表
+            refreshFiles();
+        } else {
+            showNotification('error', '退出失败: ' + result.message);
+        }
+    } catch (error) {
+        console.error('退出错误:', error);
+        showNotification('error', '退出失败: 网络错误');
+    }
+}
+
+// 生成二维码
+async function generateQRCode() {
+    showNotification('info', '二维码登录功能正在开发中');
+}
+
+// 显示登录状态
+function showCloudLoginStatus(message, type) {
+    const statusDiv = document.getElementById('cloudLoginStatus');
+    const messageDiv = document.getElementById('cloudLoginMessage');
+    
+    messageDiv.textContent = message;
+    messageDiv.className = 'status-message ' + type;
+    statusDiv.style.display = 'block';
+}
+
+// 隐藏登录状态
+function hideCloudLoginStatus() {
+    document.getElementById('cloudLoginStatus').style.display = 'none';
 }

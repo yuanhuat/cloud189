@@ -48,7 +48,7 @@ func (api *api) refresh() error {
 	}
 	user := api.conf.User
 	if user.Name == "" || user.Password == "" {
-		return errors.New("扫码不支持自动重新登录")
+		return errors.New("用户未登录或扫码不支持自动重新登录")
 	}
 	return api.PwdLogin(api.conf.User.Name, api.conf.User.Password)
 }
@@ -63,7 +63,7 @@ func (api *api) sign(req *http.Request) {
 	query.Set("channelId", "web_cloud.189.cn")
 	req.URL.RawQuery = query.Encode()
 
-	// sha1(SessionKey=相应的值&Operate=相应值&RequestURI=相应值&Date=相应的值”, SessionSecret)
+	// sha1(SessionKey=相应的值&Operate=相应值&RequestURI=相应值&Date=相应的值", SessionSecret)
 	session := api.conf.Session
 	if session.Empty() {
 		return
@@ -80,4 +80,24 @@ func (api *api) sign(req *http.Request) {
 	req.Header.Set("SessionKey", session.Key)
 	req.Header.Set("Signature", util.Sha1(data, session.Secret))
 	req.Header.Set("X-Request-ID", util.Random("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"))
+}
+
+// Logout 退出登录，清除session和配置
+func (api *api) Logout() error {
+	// 清除session信息
+	if api.conf.Session != nil {
+		api.conf.Session = &invoker.Session{}
+	}
+
+	// 清除用户信息
+	if api.conf.User != nil {
+		api.conf.User = &invoker.User{}
+	}
+
+	// 清除其他认证信息
+	api.conf.SSON = ""
+	api.conf.Auth = ""
+
+	// 保存清空的配置到文件
+	return api.conf.Save()
 }

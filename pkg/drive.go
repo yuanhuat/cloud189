@@ -13,6 +13,7 @@ type Drive interface {
 	Delete(name ...string) error
 	QrLogin() error
 	Login(username, password string) error
+	Logout() error
 	Copy(target string, source ...string) error
 	Move(target string, source ...string) error
 	Upload(config UploadConfig, cloud string, locals ...string) error
@@ -54,6 +55,8 @@ type DriveApi interface {
 	QrLogin() error
 
 	PwdLogin(username, password string) error
+
+	Logout() error
 
 	// get upload
 	Uploader() ReadWriter

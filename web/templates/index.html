@@ -54,6 +54,18 @@
                 </div>
                 
                 <div class="sidebar-section">
+                    <h3>天翼账号</h3>
+                    <ul class="nav-list">
+                        <li><a href="#" onclick="showCloudLoginModal()" class="nav-item">
+                            <i class="fas fa-user-plus"></i> 登录天翼账号
+                        </a></li>
+                        <li><a href="#" onclick="showCloudLogoutModal()" class="nav-item">
+                            <i class="fas fa-user-minus"></i> 退出天翼账号
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="sidebar-section">
                     <h3>存储空间</h3>
                     <div class="space-info">
                         <div class="space-bar">
@@ -163,6 +175,90 @@
                 <li onclick="moveFile()"><i class="fas fa-cut"></i> 移动</li>
                 <li onclick="deleteFile()"><i class="fas fa-trash"></i> 删除</li>
             </ul>
+        </div>
+
+        <!-- 天翼账号登录模态框 -->
+        <div class="modal" id="cloudLoginModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>登录天翼账号</h3>
+                    <button class="modal-close" onclick="hideCloudLoginModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="login-tabs">
+                        <button class="login-tab active" onclick="switchLoginTab('password')">密码登录</button>
+                        <button class="login-tab" onclick="switchLoginTab('qr')">二维码登录</button>
+                    </div>
+                    
+                    <!-- 密码登录表单 -->
+                    <div class="login-content active" id="passwordLoginForm">
+                        <div class="form-group">
+                            <label for="cloudUsername">用户名/手机号</label>
+                            <input type="text" id="cloudUsername" class="form-input" placeholder="请输入用户名或手机号">
+                        </div>
+                        <div class="form-group">
+                            <label for="cloudPassword">密码</label>
+                            <input type="password" id="cloudPassword" class="form-input" placeholder="请输入密码">
+                        </div>
+                        <button class="btn btn-primary" onclick="performCloudLogin()" style="width: 100%;">
+                            <i class="fas fa-sign-in-alt"></i>
+                            登录
+                        </button>
+                    </div>
+                    
+                    <!-- 二维码登录 -->
+                    <div class="login-content" id="qrLoginForm">
+                        <div class="qr-container">
+                            <div class="qr-placeholder" id="qrPlaceholder">
+                                <i class="fas fa-qrcode"></i>
+                                <p>点击下方按钮生成二维码</p>
+                                <button class="btn btn-primary" onclick="generateQRCode()">
+                                    生成二维码
+                                </button>
+                            </div>
+                            <div class="qr-code" id="qrCodeContainer" style="display: none;">
+                                <img id="qrCodeImage" src="" alt="二维码">
+                                <p>请使用天翼云盘APP扫描二维码登录</p>
+                                <div class="qr-status" id="qrStatus">等待扫描...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="login-status" id="cloudLoginStatus" style="display: none;">
+                        <div class="status-message" id="cloudLoginMessage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 天翼账号退出确认模态框 -->
+        <div class="modal" id="cloudLogoutModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>退出天翼账号</h3>
+                    <button class="modal-close" onclick="hideCloudLogoutModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="logout-confirm" style="text-align: center; padding: 1rem 0;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ff9500; margin-bottom: 1rem;"></i>
+                        <p style="margin-bottom: 0.5rem; font-size: 1.1rem;">确定要退出当前天翼云盘账号吗？</p>
+                        <p style="color: #666; font-size: 0.9rem;">退出后将无法访问云盘文件，需要重新登录。</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" onclick="hideCloudLogoutModal()">
+                        取消
+                    </button>
+                    <button class="btn btn-danger" onclick="performCloudLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        确认退出
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 通知容器 -->
