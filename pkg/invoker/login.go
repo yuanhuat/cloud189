@@ -77,9 +77,9 @@ func (ctx *content) getAppConf() *appConf {
 		data, _ := httputil.DumpResponse(resp, true)
 		fmt.Println(string(data))
 	}
-	var appConf appConf
-	json.NewDecoder(resp.Body).Decode(&appConf)
-	return &appConf
+	var appConfData appConf
+	json.NewDecoder(resp.Body).Decode(&appConfData)
+	return &appConfData
 }
 
 type encryptConf struct {
@@ -103,9 +103,9 @@ func (ctx *content) getEncryptConf() *encryptConf {
 	if err != nil {
 		return nil
 	}
-	var encryptConf encryptConf
-	json.NewDecoder(resp.Body).Decode(&encryptConf)
-	return &encryptConf
+	var encryptConfData encryptConf
+	json.NewDecoder(resp.Body).Decode(&encryptConfData)
+	return &encryptConfData
 }
 func (ctx *content) pwdRequest() *http.Request {
 	appConf := ctx.getAppConf().Data

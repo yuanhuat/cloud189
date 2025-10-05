@@ -8,14 +8,13 @@ import (
 	"github.com/gowsp/cloud189/pkg/cache"
 )
 
+
+
 type mkdirs struct {
 	ParentId string   `json:"parentId,omitempty"`
 	Paths    []string `json:"paths,omitempty"`
 }
-type response struct {
-	Code int    `json:"res_code,omitempty"`
-	Msg  string `json:"res_message,omitempty"`
-}
+
 
 func (c *api) Mkdir(parentId, path string, parents bool) error {
 	if parents {

@@ -36,11 +36,11 @@ func (r *makeDirResp) UnmarshalJSON(b []byte) error {
 	if resp.ResCode != 0 {
 		return nil
 	}
-	var folder folder
-	if err := json.Unmarshal(b, &folder); err != nil {
+	var folderData folder
+	if err := json.Unmarshal(b, &folderData); err != nil {
 		return err
 	}
-	r.Folder = &folder
+	r.Folder = &folderData
 	return nil
 }
 

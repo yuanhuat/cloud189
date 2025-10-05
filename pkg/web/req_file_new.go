@@ -76,19 +76,6 @@ func (c *api) init(i pkg.UploadFile, parentId string) error {
 	i.SetExists(upload.Data.FileDataExists == 1)
 	return nil
 }
-func (client *api) check(i pkg.UploadFile, fileId string) error {
-	var upload initResp
-	params := make(url.Values)
-	params.Set("fileMd5", i.FileMD5())
-	params.Set("sliceMd5", i.SliceMD5())
-	params.Set("uploadFileId", fileId)
-	err := client.do("/person/checkTransSecond", params, &upload)
-	if err != nil {
-		return err
-	}
-	i.SetExists(upload.Data.FileDataExists == 1)
-	return nil
-}
 
 type urlResp struct {
 	Code string                `json:"code,omitempty"`
@@ -110,13 +97,13 @@ func (client *api) UploadPart(part pkg.UploadPart, fileId string) error {
 	p.Set("partInfo", fmt.Sprintf("%s-%s", num, part.Name()))
 	p.Set("uploadFileId", fileId)
 
-	var urlResp urlResp
-	if err := client.do("/person/getMultiUploadUrls", p, &urlResp); err != nil {
+	var urlRespData urlResp
+	if err := client.do("/person/getMultiUploadUrls", p, &urlRespData); err != nil {
 		return err
 	}
 	fmt.Printf("start uploading part %s\n", num)
 
-	upload := urlResp.Data["partNumber_"+num]
+	upload := urlRespData.Data["partNumber_"+num]
 	req, _ := http.NewRequest(http.MethodPut, upload.RequestURL, part.Data())
 	headers := strings.Split(upload.RequestHeader, "&")
 	for _, v := range headers {
