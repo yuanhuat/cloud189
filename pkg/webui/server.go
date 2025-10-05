@@ -2,7 +2,10 @@ package webui
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/gowsp/cloud189/pkg"
 )
@@ -17,6 +20,17 @@ type Server struct {
 func NewServer(app pkg.Drive) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()
+	
+	// 设置会话存储
+	store := cookie.NewStore([]byte("cloud189-secret-key-change-in-production"))
+	store.Options(sessions.Options{
+		MaxAge:   int(24 * time.Hour / time.Second), // 24小时
+		HttpOnly: true,
+		Secure:   false, // 在生产环境中应设置为true（需要HTTPS）
+		SameSite: http.SameSiteLaxMode, // 使用Lax模式支持重定向
+		Path:     "/", // 确保cookie在整个站点有效
+	})
+	engine.Use(sessions.Sessions("cloud189-session", store))
 	
 	server := &Server{
 		app:    app,
@@ -33,28 +47,58 @@ func (s *Server) setupRoutes() {
 	s.engine.Static("/static", "./web/static")
 	s.engine.LoadHTMLGlob("web/templates/*")
 	
-	// 主页
-	s.engine.GET("/", s.handleIndex)
+	// 登录页面（无需认证）
+	s.engine.GET("/", s.handleLogin)
+	s.engine.GET("/login", s.handleLogin)
 	
-	// API路由组
-	api := s.engine.Group("/api")
+	// 认证API（无需认证）
+	auth := s.engine.Group("/api/auth")
 	{
-		api.GET("/files", s.handleListFiles)
-		api.GET("/files/:id", s.handleGetFile)
-		api.POST("/files/upload", s.handleUpload)
-		api.GET("/files/:id/download", s.handleDownload)
-		api.POST("/files/mkdir", s.handleMkdir)
-		api.DELETE("/files/:id", s.handleDelete)
-		api.PUT("/files/:id/rename", s.handleRename)
-		api.POST("/files/move", s.handleMove)
-		api.GET("/search", s.handleSearch)
-		api.GET("/space", s.handleSpace)
+		auth.POST("/login", s.handleAuthLogin)
+		auth.POST("/logout", s.handleAuthLogout)
+	}
+	
+	// 需要认证的路由
+	authenticated := s.engine.Group("/")
+	authenticated.Use(s.authMiddleware())
+	{
+		// 仪表盘页面
+		authenticated.GET("/dashboard", s.handleIndex)
+		
+		// API路由组
+		api := authenticated.Group("/api")
+		{
+			api.GET("/files", s.handleListFiles)
+			api.GET("/files/:id", s.handleGetFile)
+			api.POST("/files/upload", s.handleUpload)
+			api.GET("/files/:id/download", s.handleDownload)
+			api.POST("/files/mkdir", s.handleMkdir)
+			api.DELETE("/files/:id", s.handleDelete)
+			api.PUT("/files/:id/rename", s.handleRename)
+			api.POST("/files/move", s.handleMove)
+			api.GET("/search", s.handleSearch)
+			api.GET("/space", s.handleSpace)
+		}
 	}
 }
 
 // Start 启动Web服务器
 func (s *Server) Start(addr string) error {
 	return s.engine.Run(addr)
+}
+
+// handleLogin 处理登录页面请求
+func (s *Server) handleLogin(c *gin.Context) {
+	// 检查是否已经登录
+	session := sessions.Default(c)
+	if session.Get("authenticated") == true {
+		c.Redirect(http.StatusFound, "/dashboard")
+		return
+	}
+	
+	c.HTML(http.StatusOK, "login.html", gin.H{
+		"title": "系统登录 - 天翼云盘 Web 管理",
+	})
 }
 
 // handleIndex 处理主页请求
@@ -106,4 +150,77 @@ func convertFileInfo(file pkg.File) FileInfo {
 		IsDir:   file.IsDir(),
 		ModTime: file.ModTime().Format("2006-01-02 15:04:05"),
 	}
+}
+
+// authMiddleware 认证中间件
+func (s *Server) authMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		authenticated := session.Get("authenticated")
+		
+		if authenticated != true {
+			// 如果是API请求，返回JSON错误
+			path := c.FullPath()
+			if c.Request.Header.Get("Content-Type") == "application/json" || 
+			   c.Request.Header.Get("Accept") == "application/json" ||
+			   (len(path) >= 4 && path[:4] == "/api") {
+				c.JSON(http.StatusUnauthorized, Response{
+					Code:    401,
+					Message: "未授权访问，请先登录",
+				})
+				c.Abort()
+				return
+			}
+			
+			// 否则重定向到登录页面
+			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
+			return
+		}
+		
+		c.Next()
+	}
+}
+
+// handleAuthLogin 处理登录认证
+func (s *Server) handleAuthLogin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errorResponse(c, 1, "参数错误")
+		return
+	}
+	
+	// 简单的用户名密码验证（在生产环境中应该使用更安全的方式）
+	// 这里可以根据需要修改用户名和密码
+	if req.Username == "admin" && req.Password == "admin123" {
+		session := sessions.Default(c)
+		session.Set("authenticated", true)
+		session.Set("username", req.Username)
+		
+		if err := session.Save(); err != nil {
+			errorResponse(c, 1, "会话保存失败")
+			return
+		}
+		
+		success(c, gin.H{
+			"message": "登录成功",
+		})
+	} else {
+		errorResponse(c, 1, "用户名或密码错误")
+	}
+}
+
+// handleAuthLogout 处理登出
+func (s *Server) handleAuthLogout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Save()
+	
+	success(c, gin.H{
+		"message": "登出成功",
+	})
 }

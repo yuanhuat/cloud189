@@ -660,3 +660,25 @@ function showNotification(type, message) {
         notification.remove();
     }, 3000);
 }
+
+// 登出函数
+async function logout() {
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            // 登出成功，重定向到登录页面
+            window.location.href = '/';
+        } else {
+            showNotification('error', '登出失败');
+        }
+    } catch (error) {
+        console.error('登出错误:', error);
+        showNotification('error', '登出失败');
+    }
+}
